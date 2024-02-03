@@ -18,7 +18,24 @@ class UISim(tk.Toplevel):
         self.master = master
         self.configure(bg=DARKCOLOR)
         self.title("MAIA - Sim UI")
+        self.geometry("1200x900")
         self.logger=logger
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_columnconfigure(0, weight=1, uniform="equal")
+        self.grid_columnconfigure(1, weight=1, uniform="equal")
+
+        # Store data
+        self.sim = sim
+        self.omsgr = omsgr
+        self.map_width=map_width
+        self.map_height=map_height
+
+        self.BuildUI()
+
+    def BuildUI(self):
 
         self.cell_size=32
         self.map_obj_char_size=24
@@ -27,25 +44,35 @@ class UISim(tk.Toplevel):
         self.map_obj_font = tk.font.Font(family='TkFixedFont',size=self.map_obj_char_size)
         self.map_item_font = tk.font.Font(family='TkFixedFont',size=self.map_item_char_size)
 
-        # Store data
-        self.sim = sim
-        self.omsgr = omsgr
-        self.map_width=map_width
-        self.map_height=map_height
-
-        # Create the left and right frames
+        # Make main containers
+        self.titleFrame = uiQuietFrame(master=self)
         self.mapFrame = uiQuietFrame(master=self)
-        self.mapFrame.pack(fill=tk.BOTH,expand=True,side=tk.LEFT)
         self.logFrame = uiQuietFrame(master=self)
-        self.logFrame.pack(fill=tk.BOTH,expand=True,side=tk.RIGHT)
+        self.displayFrame= uiQuietFrame(master=self)
+        self.turnQuantFrame = uiQuietFrame(master=self)
+        self.turnButtFrame = uiQuietFrame(master=self)
+
+        # Add page title
+        self.titleLabel = uiLabel(master=self.titleFrame, text="MAIA")
+
+        # Place containers in grid 
+        self.titleFrame.grid(row=0,column=0,columnspan=2)
+        self.mapFrame.grid(row=1,column=0,sticky="e",padx=20,pady=20)
+        self.logFrame.grid(row=1,column=1,sticky="w",padx=10,pady=10)
+        self.displayFrame.grid(row=2,column=0,columnspan=2,padx=10,pady=10)
+        self.turnQuantFrame.grid(row=3,column=0,sticky="e",padx=10,pady=10)
+        self.turnButtFrame.grid(row=3,column=1,sticky="w",padx=10,pady=10)
+
+        # Create screen title
+        self.titleLabel.pack(side=tk.TOP,fill=tk.BOTH,expand=False,padx=10,pady=10)
 
         # Create the map canvas
         self.xbar = tk.Scrollbar(self.mapFrame,orient=tk.HORIZONTAL)
         self.ybar = tk.Scrollbar(self.mapFrame,orient=tk.VERTICAL)
         self.canvas = uiCanvas(
             master=self.mapFrame,
-            width=800,
-            height=800,
+            width=400,
+            height=400,
             xscrollcommand=self.xbar.set,
             yscrollcommand=self.ybar.set,
             scrollregion=(0,0,(self.map_width+2)*self.cell_size,(self.map_height+2)*self.cell_size),
@@ -58,42 +85,32 @@ class UISim(tk.Toplevel):
         )
         self.ybar.configure(command=self.canvas.yview)
         self.xbar.configure(command=self.canvas.xview)
-        self.ybar.pack(side=tk.RIGHT,fill=tk.Y)
-        self.xbar.pack(side=tk.BOTTOM,fill=tk.X)
-        self.canvas.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
+        self.ybar.pack(fill=tk.Y,side=tk.RIGHT)
+        self.xbar.pack(fill=tk.X,side=tk.BOTTOM)
+        self.canvas.pack()
 
         self.canvas.yview_moveto(0.0)
         self.canvas.xview_moveto(0.0)
         
-        # Create the log notebook and tabs
+        # Create the log notebook and scrolling
         self.logNotebook = uiNotebook(master=self.logFrame)
-        self.logNotebook.pack(fill=tk.BOTH,expand=True,side=tk.TOP)
-
-        self.mainLogFrame = uiQuietFrame(master=self.logNotebook)
-        self.logNotebook.add(self.mainLogFrame,text='Main')
-        self.mainScrollLog = uiScrollText(master=self.mainLogFrame)
-        self.mainScrollLog.pack(fill=tk.BOTH,expand=True,side=tk.TOP)
-        self.mainScrollLog.configure(state='disabled')
-
-        # Add the buttons
-        self.dataFrame1 = uiQuietFrame(master=self.logFrame)
-        self.dataFrame1.pack(fill=tk.BOTH,expand=True,side=tk.TOP)
-        self.lbTurnsToRun = uiLabel(master=self.dataFrame1,text="Turns To Run")
-        self.lbTurnsToRun.pack(fill=tk.BOTH,expand=True,side=tk.LEFT)
-        self.tbTurnsToRun = uiEntry(master=self.dataFrame1)
-        self.tbTurnsToRun.pack(fill=tk.BOTH,expand=True,side=tk.LEFT)
-
-
+        self.logNotebook.pack()
+        self.scrollLog = uiScrollText(master=self.logFrame)
+        self.scrollLog.pack(side=tk.TOP)
+        self.scrollLog.configure(state='disabled')
         
-        # self.dataFrame2 = uiQuietFrame(master=self.logFrame)
-        # self.dataFrame2.pack(fill=tk.BOTH,expand=True,side=tk.TOP)
-
-        self.btnFrame1 = uiQuietFrame(master=self.logFrame)
-        self.btnFrame1.pack(fill=tk.BOTH,expand=True,side=tk.TOP)
-        self.btnRunXTurns = uiButton(master=self.btnFrame1,text="Run X Turns",command=self.runXTurns)
-        self.btnRunXTurns.pack(fill=tk.BOTH,expand=True,side=tk.LEFT)
-        self.btnDisplayPoints = uiButton(master=self.btnFrame1,text="Display Points",command=self.displayPoints)
-        self.btnDisplayPoints.pack(fill=tk.BOTH,expand=True,side=tk.LEFT)
+        # Create display points button
+        self.btnDisplayPoints = uiButton(master=self.displayFrame,text="Display Points",command=self.displayPoints)
+        self.btnDisplayPoints.pack(side=tk.TOP)
+        
+        # Create button to run x terms and entry to set x
+        self.turnsToRunLabel = uiLabel(master=self.turnQuantFrame, text="Turns To Run")
+        self.turnsToRunEntry = uiEntry(master=self.turnQuantFrame)
+        self.turnsToRunLabel.grid(row=0,column=0,sticky="e")
+        self.turnsToRunEntry.grid(row=0,column=1,sticky="e")
+        self.btnRunXTurns = uiButton(master=self.turnButtFrame,text="Run X Turns",command=self.runXTurns)
+        self.btnRunXTurns.pack(side=tk.LEFT)
+        
 
         self.logFrame.after(100, self.updateLog)
 
@@ -111,12 +128,13 @@ class UISim(tk.Toplevel):
         #TEST JUNK
         # self.canvas.create_text(50,50,text="Hello world")
         #self.canvas.create_rectangle(50,50,450,450,fill="green")
+    
     def displayMsgMain(self,msg):
         m = msg.getText()
-        self.mainScrollLog.configure(state='normal')
-        self.mainScrollLog.insert(tk.END,m+"\n")
-        self.mainScrollLog.configure(state='disabled')
-        self.mainScrollLog.yview(tk.END)
+        self.scrollLog.configure(state='normal')
+        self.scrollLog.insert(tk.END,m+"\n")
+        self.scrollLog.configure(state='disabled')
+        self.scrollLog.yview(tk.END)
 
     def drawTiles(self):
         
@@ -217,7 +235,7 @@ class UISim(tk.Toplevel):
         self.logFrame.after(100,self.updateLog)
 
     def runXTurns(self):
-        turns_to_run = self.tbTurnsToRun.get()
+        turns_to_run = self.turnsToRunEntry.get()
         if turns_to_run.isdigit():
             turns_to_run = int(turns_to_run)
             self.sim.runSim(turns_to_run)
